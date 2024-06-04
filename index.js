@@ -237,10 +237,10 @@ async function run() {
 
     })
 
-    app.get('/payments/email', verifyToken, async (req, res) => {
+    app.get('/payments/:email', verifyToken, async (req, res) => {
       const email = req.params.email;
-      if(req.params.email!== req.decoded.email){
-        return res.status(401).send({message:'forbidden access'});
+      if (req.params.email !== req.decoded.email) {
+        return res.status(401).send({ message: 'forbidden access' });
       }
       const query = { email: email };
       const result = await paymentCollection.find(query).toArray();
@@ -261,10 +261,13 @@ async function run() {
 
       const deleteResult = await cartCollection.deleteMany(query);
 
-
-
       res.send(paymentResult, deleteResult);
     })
+
+
+
+    //stats and analytics
+
 
 
 
