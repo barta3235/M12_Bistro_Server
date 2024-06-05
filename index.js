@@ -261,7 +261,7 @@ async function run() {
 
       const deleteResult = await cartCollection.deleteMany(query);
 
-      res.send(paymentResult, deleteResult);
+      res.send({paymentResult, deleteResult});
     })
 
 
@@ -277,7 +277,7 @@ async function run() {
       //  const revenue= payment.reduce((total,eachPayment)=>total+eachPayment.price,0)
 
       const result = await paymentCollection.aggregate([
-     
+
         // [0]
         {
           $group: {
@@ -285,17 +285,42 @@ async function run() {
             totalRevenue: { $sum: '$price' }
           },
         },
-
-        //[1]
-        {
-
-        },
-
       ]).toArray();
 
       const revenue = result.length > 0 ? result[0].totalRevenue : 0;
 
       res.send({ users, menuItems, orders, revenue });
+    })
+
+
+
+    //order  status
+    /**
+     *  NON EFFICIENT WAY
+     *  1. load all the payments
+     *  2. for every menuItemIds which is array, go find the item from menu collection
+     *  3. for every item in the menu collection that you find form the payment entry (document)
+     */
+    
+     
+    // using aggregate pipeline
+    app.get('/order-stats', async (req, res) => {
+      const result = await paymentCollection.aggregate([
+        {
+          $unwind: '$menuItemIds'
+        },
+        {
+          $lookup:{
+            from:'menu',
+            localField:'menuItemIds',
+            foreignField:'menu_id',
+            as:'menuItems',
+          },
+        },
+       
+      ]).toArray()
+    
+      res.send(result);
     })
 
 
