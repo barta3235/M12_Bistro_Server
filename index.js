@@ -322,6 +322,24 @@ async function run() {
             as:'menuItems',
           },
         },
+        {
+          $unwind:'$menuItems'
+        },
+        {
+          $group:{
+            _id: '$menuItems.category',
+            quantity:{$sum:1},
+            revenue:{$sum:'$menuItems.price'}
+          }
+        },
+        {
+          $project:{
+            _id:0,
+            category: '$_id',
+            quantity:'$quantity',
+            totalRevenue: '$totalRevenue'
+          }
+        }
        
       ]).toArray()
     
