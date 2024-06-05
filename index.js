@@ -310,10 +310,15 @@ async function run() {
           $unwind: '$menuItemIds'
         },
         {
+          $addFields:{
+            menuItemObjectId:{$toObjectId:'$menuItemIds'}
+          }
+        },
+        {
           $lookup:{
             from:'menu',
-            localField:'menuItemIds',
-            foreignField:'menu_id',
+            localField:'menuItemObjectId',
+            foreignField:'_id',
             as:'menuItems',
           },
         },
