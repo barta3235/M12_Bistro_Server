@@ -6,7 +6,11 @@ require('dotenv').config();
 const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY)
 const port = process.env.PORT || 5000;
 const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
+// const formData = require('form-data');
+// const Mailgun = require('mailgun.js');
+// const mailgun = new Mailgun(formData);
 
+// const mg = mailgun.client({ username: 'api', key: process.env.MAIL_GUN_API_KEY || 'key-yourkeyhere' });
 
 //middleware
 app.use(cors());
@@ -247,6 +251,9 @@ async function run() {
       res.send(result);
     })
 
+
+
+    /////////
     app.post('/payments', async (req, res) => {
       const payment = req.body;
       const paymentResult = await paymentCollection.insertOne(payment);
@@ -261,7 +268,26 @@ async function run() {
 
       const deleteResult = await cartCollection.deleteMany(query);
 
-      res.send({paymentResult, deleteResult});
+
+
+      //mail gun
+      // mg.messages.create(process.env.MAIL_SENDING_DOMAIN, {
+      //   from: "Excited User <mailgun@sandbox642cf24ff9fb4ee0ab17b3efdf766b0d.mailgun.org>",
+      //   to: ["charizardworking@gmail.com"],
+      //   subject: "Thank you for ordering",
+      //   text: "Testing some Mailgun awesomeness!",
+      //   html: `
+      //        <div>
+      //             <h2>Thank you for your order</h2>
+      //             <h2>Your transaction ID: ${payment.transactionId} </h2>
+      //        </div>
+      //   `
+      // })
+      //   .then(msg => console.log(msg)) // logs response data
+      //   .catch(err => console.log(err));
+
+
+      res.send({ paymentResult, deleteResult });
     })
 
 
@@ -301,8 +327,8 @@ async function run() {
      *  2. for every menuItemIds which is array, go find the item from menu collection
      *  3. for every item in the menu collection that you find form the payment entry (document)
      */
-    
-     
+
+
     // using aggregate pipeline
     app.get('/order-stats', async (req, res) => {
       const result = await paymentCollection.aggregate([
@@ -310,39 +336,39 @@ async function run() {
           $unwind: '$menuItemIds'
         },
         {
-          $addFields:{
-            menuItemObjectId:{$toObjectId:'$menuItemIds'}
+          $addFields: {
+            menuItemObjectId: { $toObjectId: '$menuItemIds' }
           }
         },
         {
-          $lookup:{
-            from:'menu',
-            localField:'menuItemObjectId',
-            foreignField:'_id',
-            as:'menuItems',
+          $lookup: {
+            from: 'menu',
+            localField: 'menuItemObjectId',
+            foreignField: '_id',
+            as: 'menuItems',
           },
         },
         {
-          $unwind:'$menuItems'
+          $unwind: '$menuItems'
         },
         {
-          $group:{
+          $group: {
             _id: '$menuItems.category',
-            quantity:{$sum:1},
-            revenue:{$sum:'$menuItems.price'}
+            quantity: { $sum: 1 },
+            revenue: { $sum: '$menuItems.price' }
           }
         },
         {
-          $project:{
-            _id:0,
+          $project: {
+            _id: 0,
             category: '$_id',
-            quantity:'$quantity',
+            quantity: '$quantity',
             totalRevenue: '$totalRevenue'
           }
         }
-       
+
       ]).toArray()
-    
+
       res.send(result);
     })
 
